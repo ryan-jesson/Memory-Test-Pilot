@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Memory Test — Pilot</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500;600&display=swap');
+
+  :root {
+    --bg: #f5f3ef;
+    --surface: #ffffff;
+    --border: #d8d4cc;
+    --border-strong: #a09890;
+    --text-primary: #1a1816;
+    --text-secondary: #6b6560;
+    --text-muted: #9c9490;
+    --accent: #2c5f8a;
+    --accent-hover: #1e4468;
+    --accent-light: #e8f0f7;
+    --none-hover: #f0ede8;
+    --img-width: 220px;
+    --img-height: 280px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    height: 100%;
+    background: var(--bg);
+    font-family: 'DM Sans', sans-serif;
+    color: var(--text-primary);
+  }
+
+  body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 5rem 2rem 2rem;
+  }
+
+  /* ── Header ── */
+  .study-header {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    padding: 0.75rem 2rem;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    z-index: 100;
+  }
+
+  .study-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+
+  .progress-bar-wrap {
+    width: 180px;
+    height: 3px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .progress-bar-fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 2px;
+    transition: width 0.4s ease;
+  }
+
+  /* ── Screens ── */
+  .screen {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    width: 100%;
+    animation: fadeUp 0.35s ease both;
+  }
+  .screen.active { display: flex; }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(14px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── Instructions ── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 3rem;
+    text-align: left;
+    max-width: 600px;
+    width: 100%;
+  }
+
+  .card h1 {
+    font-size: 1.35rem;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    margin-bottom: 0.35rem;
+  }
+
+  .card .mono-sub {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 2rem;
+  }
+
+  .card p {
+    font-size: 0.95rem;
+    line-height: 1.75;
+    color: var(--text-secondary);
+    margin-bottom: 1rem;
+  }
+
+  .card p strong { color: var(--text-primary); font-weight: 500; }
+
+  .rule-box {
+    background: var(--accent-light);
+    border-left: 3px solid var(--accent);
+    padding: 0.75rem 1rem;
+    margin: 1.5rem 0;
+    border-radius: 0 3px 3px 0;
+  }
+  .rule-box p { margin: 0; color: var(--accent); font-size: 0.88rem; }
+
+  .start-btn {
+    margin-top: 2rem;
+    padding: 0.85rem 2.5rem;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 3px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.95rem;
+    font-weight: 500;
+    cursor: pointer;
+    letter-spacing: 0.02em;
+    transition: background 0.15s ease;
+  }
+  .start-btn:hover { background: var(--accent-hover); }
+
+  /* ── Trial ── */
+  .trial-meta {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 1.25rem;
+    align-self: flex-start;
+    padding-left: 0.25rem;
+  }
+
+  .trial-prompt {
+    font-size: 0.95rem;
+    color: var(--text-secondary);
+    margin-bottom: 2rem;
+    max-width: 680px;
+    line-height: 1.6;
+  }
+
+  /* ── Face strip ── */
+  .face-strip {
+    display: flex;
+    flex-direction: row;
+    gap: 16px;
+    margin-bottom: 2.5rem;
+    align-items: flex-start;
+  }
+
+  .face-cell {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.6rem;
+    cursor: pointer;
+  }
+
+  .face-img-wrap {
+    width: var(--img-width);
+    height: var(--img-height);
+    border: 2px solid var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+    position: relative;
+    background: #e8e4de;
+    transition: border-color 0.15s ease, transform 0.1s ease, box-shadow 0.15s ease;
+  }
+
+  .face-cell:hover .face-img-wrap {
+    border-color: var(--accent);
+    transform: translateY(-3px);
+    box-shadow: 0 8px 24px rgba(44, 95, 138, 0.13);
+  }
+
+  .face-cell.selected .face-img-wrap {
+    border-color: var(--accent);
+    border-width: 3px;
+    box-shadow: 0 0 0 3px rgba(44, 95, 138, 0.18);
+  }
+
+  .face-img-wrap img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center top;
+    display: block;
+    pointer-events: none;
+  }
+
+  .cell-number {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    letter-spacing: 0.05em;
+  }
+
+  /* ── Confirm ── */
+  .confirm-btn {
+    padding: 0.8rem 2.5rem;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 3px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    letter-spacing: 0.02em;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease, background 0.15s ease;
+  }
+  .confirm-btn.visible { opacity: 1; pointer-events: auto; }
+  .confirm-btn:hover { background: var(--accent-hover); }
+  .confirm-btn:active { transform: scale(0.98); }
+
+  /* ── Complete ── */
+  .complete-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 3rem;
+    max-width: 640px;
+    width: 100%;
+    text-align: center;
+  }
+
+  .tick-circle {
+    width: 52px; height: 52px;
+    background: #e8f3ed;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 1.5rem;
+  }
+
+  .complete-card h2 {
+    font-size: 1.25rem; font-weight: 600;
+    letter-spacing: -0.02em;
+    margin-bottom: 0.5rem;
+  }
+
+  .complete-card p {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .data-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    text-align: left;
+    margin-bottom: 2rem;
+  }
+
+  .data-table th {
+    background: var(--bg);
+    padding: 0.4rem 0.6rem;
+    color: var(--text-muted);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    border-bottom: 1px solid var(--border);
+    font-weight: 400;
+  }
+
+  .data-table td {
+    padding: 0.4rem 0.6rem;
+    border-bottom: 1px solid var(--border);
+    color: var(--text-secondary);
+  }
+
+  .data-table tr:last-child td { border-bottom: none; }
+
+  .correct-y { color: #2a6b4a; font-weight: 500; }
+  .correct-n { color: #8a2c2c; font-weight: 500; }
+
+  .export-btn {
+    padding: 0.8rem 2rem;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 3px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.88rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.15s ease;
+    margin-right: 0.75rem;
+  }
+  .export-btn:hover { background: var(--accent-hover); }
+
+  .copy-btn {
+    padding: 0.8rem 2rem;
+    background: var(--surface);
+    color: var(--accent);
+    border: 2px solid var(--accent);
+    border-radius: 3px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.88rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.15s ease;
+  }
+  .copy-btn:hover { background: var(--accent-light); }
+</style>
+</head>
+<body>
+
+<header class="study-header">
+  <span class="study-label">Manhunt — Memory Test (Pilot)</span>
+  <div class="progress-bar-wrap">
+    <div class="progress-bar-fill" id="progress-fill" style="width:0%"></div>
+  </div>
+  <span class="study-label" id="trial-counter">—</span>
+</header>
+
+<!-- INSTRUCTIONS -->
+<div class="screen active" id="instructions-screen">
+  <div class="card">
+    <h1>Face Recognition Memory Test</h1>
+    <p class="mono-sub">Final part of the session</p>
+    <p>You will now be shown a series of displays. Each display contains <strong>three face photographs</strong> presented side by side.</p>
+    <p>For each display, select the face of the person you believe you <strong>encountered during the search task</strong> you completed earlier today.</p>
+    <div class="rule-box">
+      <p>Click the face you recognise, then confirm your answer. There is no time limit — take as long as you need.</p>
+    </div>
+    <p>Please make your best judgement on every trial, even if you are unsure.</p>
+    <button class="start-btn" onclick="startTest()">Begin Memory Test →</button>
+  </div>
+</div>
+
+<!-- TRIAL -->
+<div class="screen" id="trial-screen">
+  <div class="trial-meta" id="trial-meta">Trial 1 of 10</div>
+  <p class="trial-prompt">Select the face you recognise from the search task today.</p>
+  <div class="face-strip" id="face-strip"></div>
+  <button class="confirm-btn" id="confirm-btn" onclick="confirmResponse()">Confirm response →</button>
+</div>
+
+<!-- COMPLETE -->
+<div class="screen" id="complete-screen">
+  <div class="complete-card">
+    <div class="tick-circle">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
+           stroke="#2a6b4a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="20 6 9 17 4 12"/>
+      </svg>
+    </div>
+    <h2>Memory Test Complete</h2>
+    <p>All responses recorded. Please wait for the experimenter.</p>
+    <table class="data-table" id="results-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Target</th>
+          <th>Target pos.</th>
+          <th>Response</th>
+          <th>Correct</th>
+          <th>RT (ms)</th>
+        </tr>
+      </thead>
+      <tbody id="results-body"></tbody>
+    </table>
+    <button class="export-btn" onclick="exportCSV()">Download CSV</button>
+    <button class="copy-btn" onclick="copyJSON()">Copy JSON</button>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+// CONFIG — set your GitHub raw base URL here once images are up
+// e.g. "https://raw.githubusercontent.com/YOUR_USERNAME/YOUR_REPO/main/images"
+// ═══════════════════════════════════════════════════════════════
+const IMAGE_BASE = "https://raw.githubusercontent.com/ryan-jesson/Memory-Test-Pilot/main/pilot_photos";
+
+// ═══════════════════════════════════════════════════════════════
+// CONFEDERATE LIBRARY
+// Keys must match the first-name prefix used in your file naming.
+// targetImg    → firstname_target.jpg  (novel 3rd photo)
+// distractors  → [firstname_distractor_1, firstname_distractor_2]
+// Extensions pulled from your screenshot — mixed jpg/jpeg/JPG.
+// ═══════════════════════════════════════════════════════════════
+const CONFEDERATES = {
+  avryl:    { targetImg: "avryl_target.jpg",    distractors: ["avryl_distractor_1.JPG",    "avryl_distractor_2.jpg"]    },
+  brooke:   { targetImg: "brooke_target.jpg",   distractors: ["brooke_distractor_1.jpg",   "brooke_distractor_2.jpg"]   },
+  emma:     { targetImg: "emma_target.jpg",     distractors: ["emma_distractor_1.jpg",     "emma_distractor_2.jpeg"]    },
+  grace:    { targetImg: "grace_target.jpg",    distractors: ["grace_distractor_1.jpg",    "grace_distractor_2.JPG"]    },
+  isabelle: { targetImg: "isabelle_target.jpg", distractors: ["isabelle_distractor_1.jpeg","isabelle_distractor_2.jpeg"] },
+  neha:     { targetImg: "neha_target.jpg",     distractors: ["neha_distractor_1.jpg",     "neha_distractor_2.jpg"]     },
+  punya:    { targetImg: "punya_target.jpg",    distractors: ["punya_distractor_1.jpeg",   "punya_distractor_2.jpeg"]   },
+  sarita:   { targetImg: "sarita_target.jpg",   distractors: ["sarita_distractor_1.jpeg",  "sarita_distractor_2.jpeg"]  },
+  stella:   { targetImg: "stella_target.jpg",   distractors: ["stella_distractor_1.jpg",   "stella_distractor_2.jpg"]   },
+  sue:      { targetImg: "sue_target.jpg",      distractors: ["sue_distractor_1.jpeg",     "sue_distractor_2.jpeg"]     }
+};
+
+// ═══════════════════════════════════════════════════════════════
+// RUNTIME STATE
+// ═══════════════════════════════════════════════════════════════
+let orderedTrials = [];   // shuffled trial objects
+let currentIndex  = 0;
+let currentSel    = null; // selected position index (0,1,2)
+let trialStart    = null;
+let responses     = [];
+
+function imgURL(filename) {
+  return `${IMAGE_BASE}/${filename}`;
+}
+
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+// Build one trial object per confederate, then shuffle the lot
+function buildTrials() {
+  const trials = Object.entries(CONFEDERATES).map(([name, conf]) => ({
+    name,
+    targetImg:   conf.targetImg,
+    distractors: conf.distractors
+  }));
+  return shuffle(trials);
+}
+
+// For a given trial, place target at a random position among 3 slots
+function buildDisplay(trial) {
+  const targetPos = Math.floor(Math.random() * 3);
+  const imgs = [...trial.distractors]; // 2 distractors
+  imgs.splice(targetPos, 0, trial.targetImg); // insert target
+  return { imgs, targetPos };
+}
+
+function startTest() {
+  orderedTrials = buildTrials();
+  showScreen('trial-screen');
+  renderTrial();
+}
+
+function renderTrial() {
+  const trial = orderedTrials[currentIndex];
+  const total = orderedTrials.length;
+
+  // Header
+  document.getElementById('trial-counter').textContent = `${currentIndex + 1} / ${total}`;
+  document.getElementById('progress-fill').style.width = `${(currentIndex / total) * 100}%`;
+  document.getElementById('trial-meta').textContent = `Trial ${currentIndex + 1} of ${total}`;
+
+  // Reset
+  currentSel = null;
+  document.getElementById('confirm-btn').classList.remove('visible');
+
+  // Build display
+  const { imgs, targetPos } = buildDisplay(trial);
+  trial._targetPos = targetPos; // store for scoring
+
+  const strip = document.getElementById('face-strip');
+  strip.innerHTML = '';
+
+  imgs.forEach((filename, idx) => {
+    const cell = document.createElement('div');
+    cell.className = 'face-cell';
+    cell.dataset.idx = idx;
+
+    const wrap = document.createElement('div');
+    wrap.className = 'face-img-wrap';
+
+    const img = document.createElement('img');
+    img.src = imgURL(filename);
+    img.alt = `Face ${idx + 1}`;
+    // Graceful fallback if image fails to load
+    img.onerror = () => {
+      wrap.style.background = '#ddd8d0';
+      wrap.style.display = 'flex';
+      wrap.style.alignItems = 'center';
+      wrap.style.justifyContent = 'center';
+      img.style.display = 'none';
+      const lbl = document.createElement('span');
+      lbl.style.cssText = 'font-family:DM Mono,monospace;font-size:0.65rem;color:#9c9490;text-transform:uppercase;letter-spacing:0.08em;';
+      lbl.textContent = filename;
+      wrap.appendChild(lbl);
+    };
+
+    wrap.appendChild(img);
+
+    const num = document.createElement('div');
+    num.className = 'cell-number';
+    num.textContent = `Photo ${idx + 1}`;
+
+    cell.appendChild(wrap);
+    cell.appendChild(num);
+    cell.addEventListener('click', () => selectFace(idx));
+    strip.appendChild(cell);
+  });
+
+  // Start RT clock AFTER images are appended
+  // Use requestAnimationFrame to ensure paint has occurred
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      trialStart = performance.now();
+    });
+  });
+}
+
+function selectFace(idx) {
+  currentSel = idx;
+  document.querySelectorAll('.face-cell').forEach((c, i) => {
+    c.classList.toggle('selected', i === idx);
+  });
+  document.getElementById('confirm-btn').classList.add('visible');
+}
+
+function confirmResponse() {
+  if (currentSel === null) return;
+
+  const rt      = Math.round(performance.now() - trialStart);
+  const trial   = orderedTrials[currentIndex];
+  const correct = currentSel === trial._targetPos;
+
+  responses.push({
+    trial_num:      currentIndex + 1,
+    target_name:    trial.name,
+    target_position: trial._targetPos + 1,   // 1-indexed
+    response:        currentSel + 1,          // 1-indexed
+    correct:         correct ? 1 : 0,
+    rt_ms:           rt
+  });
+
+  currentIndex++;
+
+  if (currentIndex < orderedTrials.length) {
+    // Fade out, render next
+    const strip = document.getElementById('face-strip');
+    strip.style.transition = 'opacity 0.15s ease';
+    strip.style.opacity = '0';
+    setTimeout(() => {
+      strip.style.opacity = '1';
+      renderTrial();
+    }, 160);
+  } else {
+    showComplete();
+  }
+}
+
+function showComplete() {
+  document.getElementById('progress-fill').style.width = '100%';
+  document.getElementById('trial-counter').textContent = 'Complete';
+  showScreen('complete-screen');
+
+  const tbody = document.getElementById('results-body');
+  tbody.innerHTML = '';
+  responses.forEach(r => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${r.trial_num}</td>
+      <td>${r.target_name}</td>
+      <td>${r.target_position}</td>
+      <td>${r.response}</td>
+      <td class="${r.correct ? 'correct-y' : 'correct-n'}">${r.correct ? 'Yes' : 'No'}</td>
+      <td>${r.rt_ms}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function exportCSV() {
+  const headers = ['trial_num','target_name','target_position','response','correct','rt_ms'];
+  const rows = responses.map(r => headers.map(h => r[h]).join(','));
+  const csv  = [headers.join(','), ...rows].join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href     = url;
+  a.download = `memory_test_pilot_${Date.now()}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function copyJSON() {
+  navigator.clipboard.writeText(JSON.stringify(responses, null, 2))
+    .then(() => alert('JSON copied to clipboard.'))
+    .catch(() => alert('Copy failed — check browser permissions.'));
+}
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  const el = document.getElementById(id);
+  el.classList.add('active');
+  el.style.animation = 'none';
+  el.offsetHeight; // reflow
+  el.style.animation = '';
+}
+</script>
+</body>
+</html>
